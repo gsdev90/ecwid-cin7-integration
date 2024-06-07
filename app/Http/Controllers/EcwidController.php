@@ -1,12 +1,19 @@
 <?php
-// app/Http/Controllers/EcwidController.php
+
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
+use GuzzleHttp\Client;
 
 class EcwidController extends Controller
 {
+    protected $client;
+
+    public function __construct()
+    {
+        $this->client = new Client();
+    }
+
     public function fetchOrders()
     {
         $storeId = env('ECWID_STORE_ID');
@@ -19,13 +26,16 @@ class EcwidController extends Controller
             'fulfillmentStatus' => 'AWAITING_PROCESSING,PROCESSING'
         ];
 
-        $response = Http::withHeaders([
-            'accept' => 'application/json',
-            'Authorization' => "Bearer {$apiToken}",
-        ])->get($url, $queryParams);
+        try {
+            $response = $this->client->request('GET', $url, [
+                'headers' => [
+                    'Accept' => 'application/json',
+                    'Authorization' => "Bearer {$apiToken}",
+                ],
+                'query' => $queryParams
+            ]);
 
-        if ($response->successful()) {
-            $jsonData = $response->json();
+            $jsonData = json_decode($response->getBody()->getContents(), true);
 
             $extractedData = array_map(function($order) {
                 return [
@@ -61,7 +71,7 @@ class EcwidController extends Controller
                     ] : null,
                     'shippingOption' => isset($order['shippingOption']) ? [
                         'shippingCarrierName' => isset($order['shippingOption']['shippingCarrierName']) ? $order['shippingOption']['shippingCarrierName'] : 'defaultCarrierName',
-                       'shippingMethodName' => isset($order['shippingOption']['shippingMethodName']) ? $order['shippingOption']['shippingMethodName'] : 'defaultCarriermethod',
+                        'shippingMethodName' => isset($order['shippingOption']['shippingMethodName']) ? $order['shippingOption']['shippingMethodName'] : 'defaultCarriermethod',
                         'shippingRate' => isset($order['shippingOption']['shippingRate']) ? $order['shippingOption']['shippingRate'] : 'defaultRate',
                     ] : null,
                     'billingPerson' => isset($order['billingPerson']) ? [
@@ -85,9 +95,8 @@ class EcwidController extends Controller
             }, $jsonData['items']);
 
             return response()->json($extractedData, 200, [], JSON_PRETTY_PRINT);
-            // return response()->json($jsonData, 200, [], JSON_PRETTY_PRINT);
-        } else {
-            return response()->json(['error' => 'Failed to fetch orders'], $response->status());
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to fetch orders', 'message' => $e->getMessage()], 500);
         }
     }
 
