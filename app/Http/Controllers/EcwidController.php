@@ -88,7 +88,7 @@ class EcwidController extends Controller
                         'paymentMethod' => $this->getPaymentMethod($order['paymentMethod']),
                         'paymentId' => $this->getPaymentMethod($order['externalTransactionId']),
                     ],
-                    'additionalInformation' =>[
+                    'additionalInformation' => [
                         'paymentMethod' => $this->getPaymentMethod($order['ipAddress']),
                     ]
                 ];
