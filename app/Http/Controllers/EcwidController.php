@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use GuzzleHttp\Client;
+// use app\Helpers\SkuTransformer; 
+use App\Helpers\SkuTransformer; // Import the helper class
 
 class EcwidController extends Controller
 {
@@ -41,10 +43,12 @@ class EcwidController extends Controller
                 return [
                     'orderNumber' => $order['id'],
                     'total' => $order['total'],
-                    'orderComments' => $order['orderComments'],
+                    'orderComments' => isset($order['orderComments']) ? $order['orderComments'] : 'NoCustomerComments',
                     'createDate' => $order['createDate'],
                     'updateDate' => $order['updateDate'],
                     'items' => array_map(function($item) {
+                        // modify sku from helper class
+                        $item['new_sku'] = SkuTransformer::transform($item['name'], $item['selectedOptions'] ?? []);
                         return [
                             'name' => $item['name'],
                             'quantity' => $item['quantity'],
