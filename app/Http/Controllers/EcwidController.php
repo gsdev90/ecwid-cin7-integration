@@ -48,11 +48,12 @@ class EcwidController extends Controller
                     'updateDate' => $order['updateDate'],
                     'items' => array_map(function($item) {
                         // modify sku from helper class
-                        $item['new_sku'] = SkuTransformer::transform($item['name'], $item['selectedOptions'] ?? []);
+                        $item['new_sku'] = SkuTransformer::transform($item['selectedOptions'] ?? []);
                         return [
                             'name' => $item['name'],
                             'quantity' => $item['quantity'],
                             'sku' => $item['sku'],
+                            'new-sku' => $item['new_sku'],
                             'price' => $item['price'],
                             'nameTranslated' => isset($item['nameTranslated']['en']) ? $item['nameTranslated']['en'] : null,
                             'selectedOptions' => isset($item['selectedOptions']) ? array_map(function($option) {
