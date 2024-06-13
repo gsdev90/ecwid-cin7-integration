@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use GuzzleHttp\Client;
-// use app\Helpers\SkuTransformer; 
 use App\Helpers\SkuTransformer; // Import the helper class
 
 class EcwidController extends Controller
@@ -70,7 +69,7 @@ class EcwidController extends Controller
                         'phone' => $order['shippingPerson']['phone'],
                         'street' => $order['shippingPerson']['street'],
                         'city' => $order['shippingPerson']['city'],
-                        'stateOrProvinceName' => $order['shippingPerson']['stateOrProvinceName'],
+                        'stateOrProvinceName' => $order['shippingPerson']['stateOrProvinceName'], 
                         'postalCode' => $order['shippingPerson']['postalCode'],
                         'countryName' => $order['shippingPerson']['countryName'],
                     ] : null,
