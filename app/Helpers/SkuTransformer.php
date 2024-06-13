@@ -41,7 +41,7 @@ class SkuTransformer
                                        'BSPT x BSPT Male/Male 90',
                                        'SAE100R2AT',
                                        'SAE 100R2 04 length',
-                                       'SAE 100R2AT12 3/4 Bore LENGTH',
+                                       'SAE 100R2AT-12 3/4 Bore LENGTH',
                                        'Bulkheads JIC 832FS',
                                        'ORFS Straight Female',
                                        'ORFS SIZES FEMALE',
@@ -155,7 +155,7 @@ class SkuTransformer
                         case 'BPM-JIF-0407 1/4 BSPPM x 7/16 JICFS':
                             return 'BPM-JIF-0407';
                         // BSPP Caps & Plugs Various Sizes
-                        
+
                         // Start HTR-BSP  
                         case '1/4 Reusable Hose Tail x 1/8 BSP Female':
                             return 'HTR-BSF-0402';
@@ -327,11 +327,12 @@ class SkuTransformer
                             return 'JIM-UNM-2126';  
                         case '1-5/8 JIC M x 1-5/8 UNO M -2626':
                             return 'JIM-UNM-2626';  
+                        // for hose
                         case '1/2 H-R2-08-10-EN':
                             return 'H-R2-08-EN';
                         case '20 metre coil':
                             return 'H-R2-04-EN';
-                        case '10 Metre coil HR21210':
+                        case '10 Metre coil H-R2-1210':
                             return 'H-R2-12-EN';
                         //JIC x UNO 90° Male x Male Adapters
                         case '7/16 JIC M x 9/16 UNO M 90 ELBOW -0406':
