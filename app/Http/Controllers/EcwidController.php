@@ -24,7 +24,7 @@ class EcwidController extends Controller
         $queryParams = [
             'count' => 100,
             'paymentStatus' => 'PAID',
-            'fulfillmentStatus' => 'AWAITING_PROCESSING,PROCESSING'
+            'fulfillmentStatus' => 'AWAITING_PROCESSING,PROCESSING,SHIPPED'
         ];
 
         try {
@@ -46,8 +46,13 @@ class EcwidController extends Controller
                     'createDate' => $order['createDate'],
                     'updateDate' => $order['updateDate'],
                     'items' => array_map(function($item) {
-                        // modify sku from helper class
-                        $item['new_sku'] = SkuTransformer::transform($item['selectedOptions'] ?? []);
+
+                        if (($item['name'] == "Test tees JIC") || ($item['name'] == "Test tees BSPT")) {
+                            $item['new_sku'] = $item['sku'];
+                        } else {
+                            // modify sku using helper class
+                             $item['new_sku'] = SkuTransformer::transform($item['selectedOptions'] ?? []);
+                        }
                         return [
                             'name' => $item['name'],
                             'quantity' => $item['quantity'],
@@ -69,7 +74,7 @@ class EcwidController extends Controller
                         'phone' => $order['shippingPerson']['phone'],
                         'street' => $order['shippingPerson']['street'],
                         'city' => $order['shippingPerson']['city'],
-                        'stateOrProvinceName' => $order['shippingPerson']['stateOrProvinceName'], 
+                        // 'stateOrProvinceName' => $order['shippingPerson']['stateOrProvinceName'], 
                         'postalCode' => $order['shippingPerson']['postalCode'],
                         'countryName' => $order['shippingPerson']['countryName'],
                     ] : null,
@@ -84,7 +89,7 @@ class EcwidController extends Controller
                         'phone' => $order['billingPerson']['phone'],
                         'street' =>  $order['billingPerson']['street'],
                         'city' =>  $order['billingPerson']['city'],
-                        'stateOrProvinceName' => $order['billingPerson']['stateOrProvinceName'],
+                        // 'stateOrProvinceName' => $order['billingPerson']['stateOrProvinceName'],
                         'postalCode' => $order['billingPerson']['postalCode'],
                         'country' => $order['billingPerson']['countryName']
                     ] : null,
