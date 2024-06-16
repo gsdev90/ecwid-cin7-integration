@@ -24,7 +24,7 @@ class EcwidController extends Controller
         $queryParams = [
             'count' => 100,
             'paymentStatus' => 'PAID',
-            'fulfillmentStatus' => 'AWAITING_PROCESSING,PROCESSING,SHIPPED'
+            'fulfillmentStatus' => 'AWAITING_PROCESSING,PROCESSING'
         ];
 
         try {
@@ -74,7 +74,7 @@ class EcwidController extends Controller
                         'phone' => $order['shippingPerson']['phone'],
                         'street' => $order['shippingPerson']['street'],
                         'city' => $order['shippingPerson']['city'],
-                        // 'stateOrProvinceName' => $order['shippingPerson']['stateOrProvinceName'], 
+                        'stateOrProvinceName' => $order['shippingPerson']['stateOrProvinceName'], 
                         'postalCode' => $order['shippingPerson']['postalCode'],
                         'countryName' => $order['shippingPerson']['countryName'],
                     ] : null,
@@ -89,7 +89,7 @@ class EcwidController extends Controller
                         'phone' => $order['billingPerson']['phone'],
                         'street' =>  $order['billingPerson']['street'],
                         'city' =>  $order['billingPerson']['city'],
-                        // 'stateOrProvinceName' => $order['billingPerson']['stateOrProvinceName'],
+                        'stateOrProvinceName' => $order['billingPerson']['stateOrProvinceName'],
                         'postalCode' => $order['billingPerson']['postalCode'],
                         'country' => $order['billingPerson']['countryName']
                     ] : null,
