@@ -19,9 +19,11 @@ Route::get('/', function () {
 });
 
 Route::get('/fetch-orders', [EcwidController::class, 'fetchOrders']);
+Route::post('/push-orders-to-cin7', [EcwidController::class, 'pushToCin7']);
+
 
 // routes/web.php
 Route::get('/test', function () {
-    return 'This is garry testing. Hello, World!';
+    return 'This is garry testing.!';
 });
 

@@ -104,11 +104,132 @@ class EcwidController extends Controller
             }, $jsonData['items']);
 
             return response()->json($extractedData, 200, [], JSON_PRETTY_PRINT);
+            // Call pushToCin7 method with the extracted orders
+            // return $this->pushToCin7(new Request(['orders' => $extractedData]));
+
         } catch (\Exception $e) {
             return response()->json(['error' => 'Failed to fetch orders', 'message' => $e->getMessage()], 500);
         }
     }
 
+    public function pushToCin7(Request $request)
+    {
+        $cin7AccountId = env('CIN7_ACCOUNT_ID');
+        $cin7ApiKey = env('CIN7_API_KEY');
+        $cin7ApiUrl = env('CIN7_API_KEY');
+        $orders = $request->input('orders');
+    
+        foreach ($orders as $order) {
+            $orderData = [
+                'Reference' => $order['orderNumber'],
+                'MemberId' => 12345, // Adjust this to dynamically fetch the member ID
+                'FirstName' => $order['shippingPerson']['fullName'],
+                'LastName' => '',
+                'Email' => $order['shippingPerson']['email'],
+                'Phone' => $order['shippingPerson']['phone'],
+                'DeliveryAddress1' => $order['shippingPerson']['street'],
+                'DeliveryCity' => $order['shippingPerson']['city'],
+                'DeliveryState' => $order['shippingPerson']['stateOrProvinceName'],
+                'DeliveryPostalCode' => $order['shippingPerson']['postalCode'],
+                'DeliveryCountry' => $order['shippingPerson']['countryName'],
+                'BillingAddress1' => $order['billingPerson']['street'],
+                'BillingCity' => $order['billingPerson']['city'],
+                'BillingState' => $order['billingPerson']['stateOrProvinceName'],
+                'BillingPostalCode' => $order['billingPerson']['postalCode'],
+                'BillingCountry' => $order['billingPerson']['country'],
+                'LineItems' => array_map(function($item) {
+                    return [
+                        'ProductCode' => $item['new-sku'],
+                        'Quantity' => $item['quantity'],
+                        'UnitPrice' => $item['price'],
+                    ];
+                }, $order['items']),
+                'Total' => $order['total'],
+                'CurrencyCode' => 'USD'
+            ];
+    
+            try {
+                $response = $this->client->request('POST', $cin7ApiUrl, [
+                    'headers' => [
+                        'Content-Type' => 'application/json',
+                        'Authorization' => "Bearer {$cin7ApiKey}",
+                    ],
+                    'body' => json_encode($orderData)
+                ]);
+    
+                $responseBody = json_decode($response->getBody()->getContents(), true);
+    
+                if (isset($responseBody['error'])) {
+                    return response()->json(['error' => 'Failed to push order to Cin7', 'message' => $responseBody['error']], 500);
+                }
+            } catch (\Exception $e) {
+                return response()->json(['error' => 'Failed to push order to Cin7', 'message' => $e->getMessage()], 500);
+            }
+        }
+    
+        return response()->json(['success' => 'Orders pushed to Cin7 successfully'], 200);
+    }
+
+
+
+    // private function findOrCreateCustomer($shippingPerson, $apiKey)
+    // {
+    //     // Search for the customer
+    //     $searchUrl = 'https://api.cin7.com/api/v1/Contacts';
+    //     $queryParams = [
+    //         'where' => "EmailAddress='{$shippingPerson['email']}' OR Phone='{$shippingPerson['phone']}'"
+    //     ];
+    
+    //     try {
+    //         $response = $this->client->request('GET', $searchUrl, [
+    //             'headers' => [
+    //                 'Accept' => 'application/json',
+    //                 'Authorization' => "Bearer {$apiKey}",
+    //             ],
+    //             'query' => $queryParams
+    //         ]);
+    
+    //         $responseBody = json_decode($response->getBody()->getContents(), true);
+    
+    //         if (!empty($responseBody['Items'])) {
+    //             return $responseBody['Items'][0]['ContactID']; // Return existing customer ID
+    //         }
+    //     } catch (\Exception $e) {
+    //         // Handle errors
+    //     }
+    
+    //     // If not found, create a new customer
+    //     $createUrl = 'https://api.cin7.com/api/v1/Contacts';
+    //     $customerData = [
+    //         'FirstName' => $shippingPerson['fullName'],
+    //         'Email' => $shippingPerson['email'],
+    //         'Phone' => $shippingPerson['phone'],
+    //         'Address' => $shippingPerson['street'],
+    //         'City' => $shippingPerson['city'],
+    //         'State' => $shippingPerson['stateOrProvinceName'],
+    //         'Postcode' => $shippingPerson['postalCode'],
+    //         'Country' => $shippingPerson['countryName']
+    //     ];
+    
+    //     try {
+    //         $response = $this->client->request('POST', $createUrl, [
+    //             'headers' => [
+    //                 'Content-Type' => 'application/json',
+    //                 'Authorization' => "Bearer {$apiKey}",
+    //             ],
+    //             'body' => json_encode($customerData)
+    //         ]);
+    
+    //         $responseBody = json_decode($response->getBody()->getContents(), true);
+    
+    //         return $responseBody['ContactID']; // Return new customer ID
+    //     } catch (\Exception $e) {
+    //         return null; // Handle errors
+    //     }
+    // }
+      
+
+  // these function 
     private function getPaymentMethod($paymentMethod)
     {
         if (stripos($paymentMethod, 'credit') !== false || stripos($paymentMethod, 'debit') !== false) {
