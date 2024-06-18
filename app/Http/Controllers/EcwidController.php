@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+// use Illuminate\Http\Request;
 use GuzzleHttp\Client;
 use App\Helpers\SkuTransformer; // Import the helper class
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Cin7Controller;
 
 class EcwidController extends Controller
 {
@@ -15,7 +17,7 @@ class EcwidController extends Controller
         $this->client = new Client();
     }
 
-    public function fetchOrders()
+    public function fetchOrders($type = 'all')
     {
         $storeId = env('ECWID_STORE_ID');
         $apiToken = env('ECWID_API_TOKEN');
@@ -95,13 +97,23 @@ class EcwidController extends Controller
                     ] : null,
                     'payment' =>[
                         'paymentMethod' => $this->getPaymentMethod($order['paymentMethod']),
-                        'paymentId' => $this->getPaymentMethod($order['externalTransactionId']),
+                        'paymentId' => isset($order['externalTransactionId']) ? $this->getPaymentMethod($order['externalTransactionId']) : '',
                     ],
                     'additionalInformation' => [
                         'paymentMethod' => $this->getPaymentMethod($order['ipAddress']),
                     ]
                 ];
             }, $jsonData['items']);
+
+            if ($type == 'first') {
+                return response()->json($extractedData[0], 200);
+            } elseif ($type == 'last') {
+                return response()->json(end($extractedData), 200);
+            }
+
+            // foreach ($extractedData as $order) {
+            //     $this->cin7Controller->createCustomerInternal($order);
+            // }
 
             return response()->json($extractedData, 200, [], JSON_PRETTY_PRINT);
             // Call pushToCin7 method with the extracted orders
@@ -112,65 +124,74 @@ class EcwidController extends Controller
         }
     }
 
-    public function pushToCin7(Request $request)
+    private function getPaymentMethod($paymentMethod)
     {
-        $cin7AccountId = env('CIN7_ACCOUNT_ID');
-        $cin7ApiKey = env('CIN7_API_KEY');
-        $cin7ApiUrl = env('CIN7_API_KEY');
-        $orders = $request->input('orders');
-    
-        foreach ($orders as $order) {
-            $orderData = [
-                'Reference' => $order['orderNumber'],
-                'MemberId' => 12345, // Adjust this to dynamically fetch the member ID
-                'FirstName' => $order['shippingPerson']['fullName'],
-                'LastName' => '',
-                'Email' => $order['shippingPerson']['email'],
-                'Phone' => $order['shippingPerson']['phone'],
-                'DeliveryAddress1' => $order['shippingPerson']['street'],
-                'DeliveryCity' => $order['shippingPerson']['city'],
-                'DeliveryState' => $order['shippingPerson']['stateOrProvinceName'],
-                'DeliveryPostalCode' => $order['shippingPerson']['postalCode'],
-                'DeliveryCountry' => $order['shippingPerson']['countryName'],
-                'BillingAddress1' => $order['billingPerson']['street'],
-                'BillingCity' => $order['billingPerson']['city'],
-                'BillingState' => $order['billingPerson']['stateOrProvinceName'],
-                'BillingPostalCode' => $order['billingPerson']['postalCode'],
-                'BillingCountry' => $order['billingPerson']['country'],
-                'LineItems' => array_map(function($item) {
-                    return [
-                        'ProductCode' => $item['new-sku'],
-                        'Quantity' => $item['quantity'],
-                        'UnitPrice' => $item['price'],
-                    ];
-                }, $order['items']),
-                'Total' => $order['total'],
-                'CurrencyCode' => 'USD'
-            ];
-    
-            try {
-                $response = $this->client->request('POST', $cin7ApiUrl, [
-                    'headers' => [
-                        'Content-Type' => 'application/json',
-                        'Authorization' => "Bearer {$cin7ApiKey}",
-                    ],
-                    'body' => json_encode($orderData)
-                ]);
-    
-                $responseBody = json_decode($response->getBody()->getContents(), true);
-    
-                if (isset($responseBody['error'])) {
-                    return response()->json(['error' => 'Failed to push order to Cin7', 'message' => $responseBody['error']], 500);
-                }
-            } catch (\Exception $e) {
-                return response()->json(['error' => 'Failed to push order to Cin7', 'message' => $e->getMessage()], 500);
-            }
+        if (stripos($paymentMethod, 'credit') !== false || stripos($paymentMethod, 'debit') !== false) {
+            return 'stripe';
+        } elseif (stripos($paymentMethod, 'paypal') !== false) {
+            return 'paypal';
+        } else {
+            return $paymentMethod; // Return the original payment method if no match
         }
-    
-        return response()->json(['success' => 'Orders pushed to Cin7 successfully'], 200);
     }
 
-
+    // public function pushToCin7(Request $request)
+    // {
+    //     $cin7AccountId = env('CIN7_ACCOUNT_ID');
+    //     $cin7ApiKey = env('CIN7_API_KEY');
+    //     $cin7ApiUrl = env('CIN7_API_KEY');
+    //     $orders = $request->input('orders');
+    
+    //     foreach ($orders as $order) {
+    //         $orderData = [
+    //             'Reference' => $order['orderNumber'],
+    //             'MemberId' => 12345, // Adjust this to dynamically fetch the member ID
+    //             'FirstName' => $order['shippingPerson']['fullName'],
+    //             'LastName' => '',
+    //             'Email' => $order['shippingPerson']['email'],
+    //             'Phone' => $order['shippingPerson']['phone'],
+    //             'DeliveryAddress1' => $order['shippingPerson']['street'],
+    //             'DeliveryCity' => $order['shippingPerson']['city'],
+    //             'DeliveryState' => $order['shippingPerson']['stateOrProvinceName'],
+    //             'DeliveryPostalCode' => $order['shippingPerson']['postalCode'],
+    //             'DeliveryCountry' => $order['shippingPerson']['countryName'],
+    //             'BillingAddress1' => $order['billingPerson']['street'],
+    //             'BillingCity' => $order['billingPerson']['city'],
+    //             'BillingState' => $order['billingPerson']['stateOrProvinceName'],
+    //             'BillingPostalCode' => $order['billingPerson']['postalCode'],
+    //             'BillingCountry' => $order['billingPerson']['country'],
+    //             'LineItems' => array_map(function($item) {
+    //                 return [
+    //                     'ProductCode' => $item['new-sku'],
+    //                     'Quantity' => $item['quantity'],
+    //                     'UnitPrice' => $item['price'],
+    //                 ];
+    //             }, $order['items']),
+    //             'Total' => $order['total'],
+    //             'CurrencyCode' => 'USD'
+    //         ];
+    
+    //         try {
+    //             $response = $this->client->request('POST', $cin7ApiUrl, [
+    //                 'headers' => [
+    //                     'Content-Type' => 'application/json',
+    //                     'Authorization' => "Bearer {$cin7ApiKey}",
+    //                 ],
+    //                 'body' => json_encode($orderData)
+    //             ]);
+    
+    //             $responseBody = json_decode($response->getBody()->getContents(), true);
+    
+    //             if (isset($responseBody['error'])) {
+    //                 return response()->json(['error' => 'Failed to push order to Cin7', 'message' => $responseBody['error']], 500);
+    //             }
+    //         } catch (\Exception $e) {
+    //             return response()->json(['error' => 'Failed to push order to Cin7', 'message' => $e->getMessage()], 500);
+    //         }
+    //     }
+    
+    //     return response()->json(['success' => 'Orders pushed to Cin7 successfully'], 200);
+    // }
 
     // private function findOrCreateCustomer($shippingPerson, $apiKey)
     // {
@@ -227,17 +248,138 @@ class EcwidController extends Controller
     //         return null; // Handle errors
     //     }
     // }
-      
 
-  // these function 
-    private function getPaymentMethod($paymentMethod)
-    {
-        if (stripos($paymentMethod, 'credit') !== false || stripos($paymentMethod, 'debit') !== false) {
-            return 'stripe';
-        } elseif (stripos($paymentMethod, 'paypal') !== false) {
-            return 'paypal';
-        } else {
-            return $paymentMethod; // Return the original payment method if no match
-        }
-    }
+    // public function createCustomer()
+    // {
+    //     Log::info("name: " . "test");
+    //     Log::info("value : " ."test");
+
+    //     $client = new Client();
+    //     $url = 'https://inventory.dearsystems.com/ExternalApi/v2/customer';
+        
+    //     $data = [
+    //             "Name": "Australia - Hydraulic Services test ",
+    //             "Currency": "AUD",
+    //             "PaymentTerm": "30 days",
+    //             "Discount": 0,
+    //             "TaxRule": "GST on Income",
+    //             "Carrier": "DEFAULT Carrier",
+    //             "SalesRepresentative": null,
+    //             "Location": "Main Warehouse",
+    //             "Comments": null,
+    //             "AccountReceivable": "610",
+    //             "RevenueAccount": "200",
+    //             "PriceTier": "Tier 1",
+    //             "TaxNumber": null,
+    //             "AttributeSet": null,
+    //             "Tags": null,
+    //             "Status": "Active",
+    //             "IsOnCreditHold": true,
+    //             "Addresses": [
+    //                 {
+    //                     "Line1": "L6, Southbank House",
+    //                     "Line2": "15 Gallery Ave",
+    //                     "City": "Melbourne",
+    //                     "State": "VIC",
+    //                     "Postcode": "3131",
+    //                     "Country": "Australia",
+    //                     "Type": "Business",
+    //                     "DefaultForType": true
+    //                 },
+    //                 {
+    //                     "Line1": "L5, Southbank House",
+    //                     "Line2": "15 Gallery Ave",
+    //                     "City": "Melbourne",
+    //                     "State": "VIC",
+    //                     "Postcode": "3131",
+    //                     "Country": "Australia",
+    //                     "Type": "Billing",
+    //                     "DefaultForType": true
+    //                 }
+    //             ],
+    //             "Contacts": [
+    //                 {
+    //                     "Name": "Sheree Test",
+    //                     "JobTitle": null,
+    //                     "Phone": "0800 4389390",
+    //                     "MobilePhone": null,
+    //                     "Fax": "03 4389379",
+    //                     "Email": "account.test@diisr.govt",
+    //                     "Website": null,
+    //                     "Default": true,
+    //                     "Comment": null,
+    //                     "IncludeInEmail": false
+    //                 }
+    //             ]
+    //     ];
+        
+    //     $headers = [
+    //         'Content-Type' => 'application/json',
+    //         'api-auth-accountid' => '1a62ed7e-8c8d-4a59-8bcc-e074cd3f82dd',
+    //         'api-auth-applicationkey' => '0495fe34-f7c1-ae3c-8b67-0ef00e8436e4'
+    //     ];
+        
+    //     try {
+    //         // Implementing a delay of 0.34 seconds (approximately 3 requests per second)
+    //         // usleep(340000); 
+
+    //         log::info(__FILE__.__LINE__);
+            
+    //         $response = $client->post($url, [
+    //             'headers' => $headers,
+    //             'json' => $data
+    //         ]);
+
+    //         log::info(__FILE__.__LINE__);
+            
+    //         $body = $response->getBody();
+    //         $content = json_decode($body, true);
+    //         log::info(__FILE__.__LINE__);
+            
+    //         return response()->json($content);
+    //     } catch (\Exception $e) {
+    //         return response()->json(['error' => $e->getMessage()], 500);
+    //     }
+    // }
+
+    // public function createSalesOrder()
+    // {
+    //     $client = new Client();
+    //     $url = 'https://api.cin7.com/api/v1/SalesOrders';
+        
+    //     $data = [
+    //         [
+    //             "memberId" => 41,
+    //             "lineItems" => [
+    //                 [
+    //                     "code" => "ProductZ",
+    //                     "qty" => 1.0
+    //                 ]
+    //             ]
+    //         ]
+    //     ];
+        
+    //     $headers = [
+    //         'Content-Type' => 'application/json',
+    //         'api-auth-accountid' => 'your_account_id',
+    //         'api-auth-applicationkey' => 'your_application_key'
+    //     ];
+        
+    //     try {
+    //         // Implementing a delay of 0.34 seconds (approximately 3 requests per second)
+    //         usleep(340000); 
+            
+    //         $response = $client->post($url, [
+    //             'headers' => $headers,
+    //             'json' => $data
+    //         ]);
+            
+    //         $body = $response->getBody();
+    //         $content = json_decode($body, true);
+            
+    //         return response()->json($content);
+    //     } catch (\Exception $e) {
+    //         return response()->json(['error' => $e->getMessage()], 500);
+    //     }
+    // }
 }
