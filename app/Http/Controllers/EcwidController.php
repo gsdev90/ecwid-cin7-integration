@@ -11,11 +11,19 @@ use App\Http\Controllers\Cin7Controller;
 class EcwidController extends Controller
 {
     protected $client;
+    protected $cin7Controller;
 
     public function __construct()
     {
         $this->client = new Client();
     }
+
+    // public function __construct(Client $client, Cin7Controller $cin7Controller)
+    // {
+    //     $this->client = $client;
+    //     $this->cin7Controller = $cin7Controller;
+    // }
+    
 
     public function fetchOrders($type = 'all')
     {
@@ -30,6 +38,8 @@ class EcwidController extends Controller
         ];
 
         try {
+            Log::info('Fetching orders from Ecwid', ['url' => $url, 'queryParams' => $queryParams]);
+
             $response = $this->client->request('GET', $url, [
                 'headers' => [
                     'Accept' => 'application/json',
@@ -39,6 +49,7 @@ class EcwidController extends Controller
             ]);
 
             $jsonData = json_decode($response->getBody()->getContents(), true);
+            Log::info('Orders fetched successfully', ['orders' => $jsonData]);
 
             $extractedData = array_map(function($order) {
                 return [
@@ -105,11 +116,19 @@ class EcwidController extends Controller
                 ];
             }, $jsonData['items']);
 
-            if ($type == 'first') {
-                return response()->json($extractedData[0], 200);
-            } elseif ($type == 'last') {
-                return response()->json(end($extractedData), 200);
-            }
+            Log::info('Orders processed successfully', ['extractedData' => $extractedData]);
+
+
+            // Call createCustomerForCin7 method with the first order
+            // if (!empty($extractedData)) {
+            //     $this->cin7Controller->createCustomerForCin7($extractedData[0]);
+            // }
+
+            // if ($type == 'first') {
+            //     return response()->json($extractedData[0], 200);
+            // } elseif ($type == 'last') {
+            //     return response()->json(end($extractedData), 200);
+            // }
 
             // foreach ($extractedData as $order) {
             //     $this->cin7Controller->createCustomerInternal($order);
@@ -120,6 +139,7 @@ class EcwidController extends Controller
             // return $this->pushToCin7(new Request(['orders' => $extractedData]));
 
         } catch (\Exception $e) {
+            Log::error('Error fetching orders: ' . $e->getMessage());
             return response()->json(['error' => 'Failed to fetch orders', 'message' => $e->getMessage()], 500);
         }
     }
@@ -134,6 +154,18 @@ class EcwidController extends Controller
             return $paymentMethod; // Return the original payment method if no match
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+    
 
     // public function pushToCin7(Request $request)
     // {
@@ -382,4 +414,16 @@ class EcwidController extends Controller
     //         return response()->json(['error' => $e->getMessage()], 500);
     //     }
     // }
+
+
+    public function fetchOrder($type = 'all')
+   {
+        try {
+            Log::info('fetchOrders method called');
+            // Your existing code
+        } catch (\Exception $e) {
+            Log::error('Error fetching orders: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to fetch orders', 'message' => $e->getMessage()], 500);
+        }
+   }
 }

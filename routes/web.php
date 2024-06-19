@@ -26,6 +26,10 @@ Route::get('/data', [Cin7Controller::class, 'createCustomer']);
 Route::get('/firstdata', [Cin7Controller::class, 'createCustomerInternal']);
 
 
+
+Route::get('/fetch', [EcwidController::class, 'fetchOrders']);
+
+
 // Route::post('/push-orders-to-cin7', [EcwidController::class, 'pushToCin7']);
 
 
@@ -39,4 +43,15 @@ Route::get('/firstdata', [Cin7Controller::class, 'createCustomerInternal']);
 Route::get('/test', function () {
     return 'This is garry testing.!';
 });
+
+
+Route::get('/test2', function () {
+    return 'This is garry testing.!';
+});
+
+Route::get('/test4', function () {
+    return 'This is garry testing.!';
+});
+
+
 

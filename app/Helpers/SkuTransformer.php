@@ -26,11 +26,11 @@ class SkuTransformer
 
 
                 // To see logs on server 
-                // error_log("Option name: " . $name);
-                // error_log("Option value: " . $value);
+                error_log("Option name: " . $name);
+                error_log("Option value: " . $value);
 
-                Log::info("name: " . $name);
-                Log::info("value : " . $value);
+                // Log::info("name: " . $name);
+                // Log::info("value : " . $value);
 
                 // this array check if there name exist in selected name
                 $all_Selected_Name = [
