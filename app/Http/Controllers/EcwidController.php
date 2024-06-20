@@ -34,7 +34,7 @@ class EcwidController extends Controller
         $queryParams = [
             'count' => 100,
             'paymentStatus' => 'PAID',
-            'fulfillmentStatus' => 'AWAITING_PROCESSING,PROCESSING'
+            'fulfillmentStatus' => 'AWAITING_PROCESSING,PROCESSING,SHIPPED'
         ];
 
         try {

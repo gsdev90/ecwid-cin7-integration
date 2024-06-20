@@ -52,6 +52,7 @@ class SkuTransformer
                                        'BPM-JIF-',
                                        'BSPP x BSPP Male/Male Nipples',
                                        'BSPP x BSPT Male/Male Nipples',
+                                       'BSPT x JIC Male/Male',
                                        'BSPT MALE K',
                                        'BSPP FEMALE K',
                                        'JIC Female Straight good for 1 and 2 wire hose',
@@ -231,6 +232,8 @@ class SkuTransformer
                         case '1 BSPP Cap':
                             return 'BPF-16'; 
                         // Start HTR-BSP  
+                        case '1/2 BSPTM x 9/16 JICM NIPPLE':
+                            return 'BPM-JIM-0809';
                         case '1/4 Reusable Hose Tail x 1/8 BSP Female':
                             return 'HTR-BSF-0402';
                         case '1/4 Reusable Hose Tail x 1/4 BSP Female':

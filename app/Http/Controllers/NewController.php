@@ -7,7 +7,7 @@ use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Log;
 use App\Helpers\SkuTransformer; // Import the helper class
 
-class Ecwid_Cin7UpdateController extends Controller
+class NewController extends Controller
 {
     protected $client;
 
@@ -109,7 +109,7 @@ class Ecwid_Cin7UpdateController extends Controller
             Log::info('Orders processed successfully');
 
             if (!empty($extractedData)) {
-                $this->createCustomerForCin7($extractedData[4]);
+                $this->createCustomerForCin7($extractedData[5]);
             }
 
             if ($type == 'first') {
@@ -227,6 +227,8 @@ class Ecwid_Cin7UpdateController extends Controller
         }
     }
      
+       
+    
     public function generateSale($customer, $order)
     {
         Log::info('Generating Sale Order for Customer:', ['customerId' => $customer['ID']]);
@@ -315,7 +317,7 @@ class Ecwid_Cin7UpdateController extends Controller
                 ]
             ],
             "ShippingNotes" => "",
-            "TaxRule" => "GST on Income",
+            "TaxRule" => "",
             "TaxInclusive" => "false",
             "Terms" => $customer['PaymentTerm'],
             "PriceTier" => $customer['PriceTier'],
@@ -374,8 +376,8 @@ class Ecwid_Cin7UpdateController extends Controller
                 "Name" => $item['name'],
                 "Quantity" => $item['quantity'],
                 "Price" => $item['price'],
-                "Discount" => "",
-                "Tax" => "",
+                "Discount" => 0,
+                "Tax" => 0,
                 "AverageCost" => $item['AverageCost'] ?? 0,
                 "TaxRule" => "GST on Income",
                 "Comment" => "",
@@ -392,10 +394,7 @@ class Ecwid_Cin7UpdateController extends Controller
             "Status" => "AUTHORISED",
             "Prepayments" => [],
             "Lines" => $lines,
-            "AdditionalCharges" => [],
-            "TotalBeforeTax" => "",
-            "Tax" => "",
-            "Total" =>"",
+            "AdditionalCharges" => []
         ];
     
         $headers = [
@@ -413,11 +412,14 @@ class Ecwid_Cin7UpdateController extends Controller
             $body = $response->getBody();
             $content = json_decode($body->getContents(), true);
             Log::info('Sale Quote Created: ', $content);
+
+            $this->createSaleOrder($saleId, $items);
     
             // Extract TaskID from response and call saleOrder API
-            if (isset($content['TaskID'])) {
-                $this->createSaleOrder($saleId, $items);
-            }
+            // if (isset($content['TaskID'])) {
+            //     Log::info('Calling createSaleOrder with SaleID:', ['saleId' => $saleId, 'taskId' => $content['TaskID']]);
+            //     $this->createSaleOrder($saleId, $items);
+            // }
     
             return $content;
         } catch (\Exception $e) {
@@ -426,8 +428,7 @@ class Ecwid_Cin7UpdateController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
-
-
+    
     public function createSaleOrder($saleId, $items)
     {
         Log::info('Creating Sale Order for SaleID:', ['saleId' => $saleId]);
@@ -436,10 +437,10 @@ class Ecwid_Cin7UpdateController extends Controller
         $url = 'https://inventory.dearsystems.com/ExternalApi/v2/sale/order';
     
         $lines = array_map(function ($item) {
-            $productID = $this->getProductIDBySKU($item['sku']);
+            $productID = $this->getProductIDBySKU($item['new-sku']);
             return [
                 "ProductID" => $productID,
-                "SKU" => $item['sku'],
+                "SKU" => $item['new-sku'],
                 "Name" => $item['name'],
                 "Quantity" => $item['quantity'],
                 "Price" => $item['price'],
@@ -458,7 +459,6 @@ class Ecwid_Cin7UpdateController extends Controller
     
         $data = [
             "SaleID" => $saleId,
-            "CombineAdditionalCharges" => False,
             "Memo" => "",
             "Status" => "AUTHORISED",
             "AutoPickPackShipMode" => "NOPICK",
@@ -484,11 +484,15 @@ class Ecwid_Cin7UpdateController extends Controller
             $body = $response->getBody();
             $content = json_decode($body->getContents(), true);
             Log::info('Sale Order Created: ', $content);
+
+            // $this->createSaleFulfilment($saleId, $items);
     
             // Extract TaskID from response and call saleInvoice API
-            if (isset($content['TaskID'])) {
-                $this->createSaleInvoice($saleId, $content['TaskID'], $items);
-            }
+            // if (isset($content['TaskID'])) {
+            //     // $this->createSaleInvoice($saleId, $content['TaskID'], $items);
+            //     Log::info('Calling createSaleFulfilment with SaleID and TaskID:', ['saleId' => $saleId, 'taskId' => $content['TaskID']]);
+            //     $this->createSaleFulfilment($saleId, $content['TaskID'], $items);
+            // }
     
             return $content;
         } catch (\Exception $e) {
@@ -499,20 +503,81 @@ class Ecwid_Cin7UpdateController extends Controller
     }
 
 
-
-
-
+    public function createSaleFulfilment($saleId, $items)
+    {
+        Log::info('Creating Sale Fulfilment for SaleID:', ['saleId' => $saleId]);
+    
+        $client = new Client();
+        $url = 'https://inventory.dearsystems.com/ExternalApi/v2/sale/fulfilment';
+    
+        $lines = array_map(function ($item) {
+            $productID = $this->getProductIDBySKU($item['new-sku']);
+            return [
+                "ProductID" => $productID,
+                "SKU" => $item['new-sku'],
+                "Name" => $item['name'],
+                "Location" => "Default Location",
+                "LocationID" => "default-location-id",
+                "Quantity" => $item['quantity'],
+                "RestockLocation" => "Default Restock Location",
+                "RestockLocationID" => "default-restock-location-id"
+            ];
+        }, $items);
+    
+        Log::info('Lines for Sale Fulfilment:', ['lines' => $lines]);
+    
+        $data = [
+            "SaleID" => $saleId,
+            "Fulfilments" => [
+                "TaskID" => $saleId,
+                "FulfillmentNumber" => 1,
+                "FulFilmentStatus" => "FullFilled",
+                "Pick" => $lines,
+                "Pack" => $lines,
+                "Ship" => [
+                    "status" => "AUTHORISED"
+                ]
+            ]
+        ];
+    
+        $headers = [
+            'Content-Type' => 'application/json',
+            'api-auth-accountid' => '1a62ed7e-8c8d-4a59-8bcc-e074cd3f82dd',
+            'api-auth-applicationkey' => '0495fe34-f7c1-ae3c-8b67-0ef00e8436e4'
+        ];
+    
+        try {
+            $response = $client->post($url, [
+                'headers' => $headers,
+                'json' => $data
+            ]);
+    
+            $body = $response->getBody();
+            $content = json_decode($body->getContents(), true);
+            Log::info('Sale Fulfilment Created: ', $content);
+    
+            // Call saleInvoice API
+            // $this->createSaleInvoice($saleId, $taskId, $items);
+            $this->createSaleFulfilment($saleId, $items);
+    
+            return $content;
+        } catch (\Exception $e) {
+            Log::error('Error creating sale fulfilment: ' . $e->getMessage());
+            Log::error('Response Body: ' . $e->getResponse()->getBody()->getContents());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
 
     
-    public function createSaleInvoice($saleId, $taskId, $items)
+    public function createSaleInvoice($saleId, $items)
     {
-        Log::info('Creating Sale Invoice for SaleID:', ['saleId' => $saleId, 'taskId' => $taskId]);
+        Log::info('Creating Sale Invoice for SaleID:', ['saleId' => $saleId]);
     
         $client = new Client();
         $url = 'https://inventory.dearsystems.com/ExternalApi/v2/sale/invoice';
     
         $lines = array_map(function ($item) {
-            $productID = $this->getProductIDBySKU($item['sku']);
+            $productID = $this->getProductIDBySKU($item['new-sku']);
             return [
                 "ProductID" => $productID,
                 "SKU" => $item['new-sku'],
@@ -532,10 +597,10 @@ class Ecwid_Cin7UpdateController extends Controller
     
         $data = [
             "SaleID" => $saleId,
-            "TaskID" => $taskId,
+            "TaskID" => $saleId,
             "CombineAdditionalCharges" => false,
             "Memo" => "",
-            "Status" => "DRAFT",
+            "Status" => "AUTHORISED",
             "InvoiceDate" => now()->toIso8601String(),
             "InvoiceDueDate" => now()->addDays(30)->toIso8601String(),
             "CurrencyConversionRate" => 1,
@@ -605,8 +670,6 @@ class Ecwid_Cin7UpdateController extends Controller
             return '';
         }
     }
-    
-    
     
     
     
