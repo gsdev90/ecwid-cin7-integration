@@ -109,7 +109,7 @@ class NewController extends Controller
             Log::info('Orders processed successfully');
 
             if (!empty($extractedData)) {
-                $this->createCustomerForCin7($extractedData[5]);
+                $this->createCustomerForCin7($extractedData[0]);
             }
 
             if ($type == 'first') {
@@ -226,8 +226,6 @@ class NewController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
-     
-       
     
     public function generateSale($customer, $order)
     {
@@ -347,12 +345,29 @@ class NewController extends Controller
     
             $body = $response->getBody();
             $content = json_decode($body->getContents(), true);
-            Log::info('Sale Order Created: ', $content);
+            Log::info('Generate sale Created: ', $content);
+
+            if (isset($content['Invoices'][0]['TaskID'])) {
+                    $taskId = $content['Invoices'][0]['TaskID'];
+                    // $this->createSaleInvoice($saleId, $items, $taskId);
+            } else {
+                Log::error('TaskID not found in the JSON response.');
+                // return response()->json(['error' => 'TaskID not found'], 400);
+            }
+
     
             // Extract SaleID from response and call saleQuote API
             if (isset($content['ID'])) {
-                $this->createSaleQuote($content['ID'], $order['items']);
+                $this->createSaleQuote($content['ID'], $order['items'], $taskId);
             }
+
+            // if (isset($content['Fulfilments'][0]['TaskID'])) {
+            //     $taskId = $content['Fulfilments'][0]['TaskID'];
+            //     $this->createSaleInvoice($saleId, $items, $taskId);
+            // } else {
+            //     Log::error('TaskID not found in the JSON response.');
+            //     return response()->json(['error' => 'TaskID not found'], 400);
+            // }
     
             return $content;
         } catch (\Exception $e) {
@@ -361,7 +376,7 @@ class NewController extends Controller
         }
     }
     
-    public function createSaleQuote($saleId, $items)
+    public function createSaleQuote($saleId, $items, $taskId)
     {
         Log::info('Creating Sale Quote for SaleID:', ['saleId' => $saleId]);
     
@@ -413,7 +428,7 @@ class NewController extends Controller
             $content = json_decode($body->getContents(), true);
             Log::info('Sale Quote Created: ', $content);
 
-            $this->createSaleOrder($saleId, $items);
+            $this->createSaleOrder($saleId, $items, $taskId);
     
             // Extract TaskID from response and call saleOrder API
             // if (isset($content['TaskID'])) {
@@ -429,7 +444,7 @@ class NewController extends Controller
         }
     }
     
-    public function createSaleOrder($saleId, $items)
+    public function createSaleOrder($saleId, $items, $taskId)
     {
         Log::info('Creating Sale Order for SaleID:', ['saleId' => $saleId]);
     
@@ -468,6 +483,8 @@ class NewController extends Controller
             "Tax" => 0,
             "Total" => array_sum(array_column($lines, 'Total')) + 350
         ];
+
+     
     
         $headers = [
             'Content-Type' => 'application/json',
@@ -484,6 +501,9 @@ class NewController extends Controller
             $body = $response->getBody();
             $content = json_decode($body->getContents(), true);
             Log::info('Sale Order Created: ', $content);
+
+
+            $this->createSaleInvoice($saleId, $items, $taskId);
 
             // $this->createSaleFulfilment($saleId, $items);
     
@@ -502,8 +522,7 @@ class NewController extends Controller
         }
     }
 
-
-    public function createSaleFulfilment($saleId, $items)
+    public function createSaleFulfilment($saleId, $items, $taskId)
     {
         Log::info('Creating Sale Fulfilment for SaleID:', ['saleId' => $saleId]);
     
@@ -568,10 +587,9 @@ class NewController extends Controller
         }
     }
 
-    
-    public function createSaleInvoice($saleId, $items)
+    public function createSaleInvoice($saleId, $items, $taskId)
     {
-        Log::info('Creating Sale Invoice for SaleID:', ['saleId' => $saleId]);
+        Log::info('Creating Sale Invoice for SaleID:', ['saleId' => $saleId, 'taskId' => $taskId]);
     
         $client = new Client();
         $url = 'https://inventory.dearsystems.com/ExternalApi/v2/sale/invoice';
@@ -597,19 +615,25 @@ class NewController extends Controller
     
         $data = [
             "SaleID" => $saleId,
-            "TaskID" => $saleId,
-            "CombineAdditionalCharges" => false,
-            "Memo" => "",
-            "Status" => "AUTHORISED",
-            "InvoiceDate" => now()->toIso8601String(),
-            "InvoiceDueDate" => now()->addDays(30)->toIso8601String(),
-            "CurrencyConversionRate" => 1,
-            "BillingAddressLine1" => "3 Park Street Industrial Village Southbank",
-            "BillingAddressLine2" => "Melbourne VIC 3331",
-            "LinkedFulfillmentNumber" => "1",
-            "Lines" => $lines,
-            "AdditionalCharges" => []
+            "Invoices" => [
+                [
+                    "TaskID" => $taskId,
+                    "CombineAdditionalCharges" => false,
+                    "Memo" => "",
+                    "Status" => "AUTHORISED",
+                    "InvoiceDate" => substr(now()->toIso8601String(), 0, 10),
+                    "InvoiceDueDate" => substr(now()->addDays(30)->toIso8601String(), 0, 10),
+                    "CurrencyConversionRate" => 1,
+                    "BillingAddressLine1" => "3 Park Street Industrial Village Southbank",
+                    "BillingAddressLine2" => "Melbourne VIC 3331",
+                    "LinkedFulfillmentNumber" => "1",
+                    "Lines" => $lines,
+                    "AdditionalCharges" => []
+                ]
+            ],
         ];
+
+        Log::info('To Create Invoice we are feeding', ['Data' => $data]);
     
         $headers = [
             'Content-Type' => 'application/json',
@@ -670,10 +694,6 @@ class NewController extends Controller
             return '';
         }
     }
-    
-    
-    
-    
 
     private function getPaymentMethod($paymentMethod)
     {
@@ -686,8 +706,4 @@ class NewController extends Controller
         }
     }
 
-    public function garry()
-    {
-        return "test";
-    }
 }
