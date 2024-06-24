@@ -25,7 +25,7 @@ class NewController extends Controller
         $queryParams = [
             'count' => 100,
             'paymentStatus' => 'PAID',
-            'fulfillmentStatus' => 'AWAITING_PROCESSING,PROCESSING,SHIPPED',
+            'fulfillmentStatus' => 'AWAITING_PROCESSING,PROCESSING',
         ];
 
         try {
@@ -108,8 +108,16 @@ class NewController extends Controller
 
             Log::info('Orders processed successfully');
 
+            // only for processed 1 order
+            // if (!empty($extractedData)) {
+            //     $this->createCustomerForCin7($extractedData[11]);
+            // }
+
+            // for Processed all orders
             if (!empty($extractedData)) {
-                $this->createCustomerForCin7($extractedData[0]);
+                foreach ($extractedData as $orderData) {
+                    $this->createCustomerForCin7($orderData);
+                }
             }
 
             if ($type == 'first') {
