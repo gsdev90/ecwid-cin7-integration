@@ -109,16 +109,16 @@ class NewController extends Controller
             Log::info('Orders processed successfully');
 
             // only for processed 1 order
-            // if (!empty($extractedData)) {
-            //     $this->createCustomerForCin7($extractedData[11]);
-            // }
+            if (!empty($extractedData)) {
+                $this->createCustomerForCin7($extractedData[11]);
+            }
 
             // for Processed all orders
-            if (!empty($extractedData)) {
-                foreach ($extractedData as $orderData) {
-                    $this->createCustomerForCin7($orderData);
-                }
-            }
+            // if (!empty($extractedData)) {
+            //     foreach ($extractedData as $orderData) {
+            //         $this->createCustomerForCin7($orderData);
+            //     }
+            // }
 
             if ($type == 'first') {
                 return response()->json($extractedData[0], 200);
