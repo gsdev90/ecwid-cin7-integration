@@ -156,16 +156,104 @@ class EcwidController extends Controller
     }
 
 
+    // To get Product ID
+    public function fetchProductIds()
+    {
+        $storeId = env('ECWID_STORE_ID');
+        $apiToken = env('ECWID_API_TOKEN');
+
+        $url = "https://app.ecwid.com/api/v3/{$storeId}/products";
+        $queryParams = [
+            'limit' => 500, // Adjust the limit as needed
+            'offset' => 0
+        ];
+
+        try {
+            Log::info('Fetching product IDs from Ecwid', ['url' => $url, 'queryParams' => $queryParams]);
+
+            $response = $this->client->request('GET', $url, [
+                'headers' => [
+                    'Accept' => 'application/json',
+                    'Authorization' => "Bearer {$apiToken}",
+                ],
+                'query' => $queryParams
+            ]);
+
+            $jsonData = json_decode($response->getBody()->getContents(), true);
+            Log::info('Product IDs fetched successfully', ['products' => $jsonData]);
+
+            $extractedData = array_map(function($product) {
+                return [
+                    'productId' => $product['id'],
+                    'name' => $product['name'],
+                    'sku' => $product['sku']
+                ];
+            }, $jsonData['items']);
+
+            Log::info('Product IDs processed successfully', ['extractedData' => $extractedData]);
+
+            return response()->json($extractedData, 200, [], JSON_PRETTY_PRINT);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching product IDs: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to fetch product IDs', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function fetchProductVariations()
+    {
+        $productId = "129101039"; //129101039  138836880
+        $storeId = env('ECWID_STORE_ID');
+        $apiToken = env('ECWID_API_TOKEN');
+
+        $url = "https://app.ecwid.com/api/v3/{$storeId}/products/{$productId}/combinations";
+
+        try {
+            Log::info('Fetching product variations from Ecwid', ['url' => $url]);
+
+            $response = $this->client->request('GET', $url, [
+                'headers' => [
+                    'Accept' => 'application/json',
+                    'Authorization' => "Bearer {$apiToken}",
+                ]
+            ]);
+
+            $jsonData = json_decode($response->getBody()->getContents(), true);
+            Log::info('Product variations fetched successfully', ['variations' => $jsonData]);
+
+            if (!isset($jsonData['combinations'])) {
+                Log::warning('No product variations found for the given product ID', ['productId' => $productId]);
+                return response()->json(['message' => 'No product variations found'], 200);
+            }
+
+            $extractedData = array_map(function($variation) {
+                return [
+                    'combinationId' => $variation['id'],
+                    'sku' => $variation['sku'],
+                    'quantity' => $variation['quantity'],
+                    'price' => $variation['price'],
+                    'options' => array_map(function($option) {
+                        return [
+                            'name' => $option['name'],
+                            'value' => $option['value'],
+                        ];
+                    }, $variation['options']),
+                ];
+            }, $jsonData['combinations']);
+
+            Log::info('Product variations processed successfully', ['extractedData' => $extractedData]);
+
+            return response()->json($extractedData, 200, [], JSON_PRETTY_PRINT);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching product variations: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to fetch product variations', 'message' => $e->getMessage()], 500);
+        }
+    }
 
 
 
 
-
-
-
-
-
-    
 
     // public function pushToCin7(Request $request)
     // {

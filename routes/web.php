@@ -20,6 +20,8 @@ Route::get('/', function () {
 });
 
 Route::get('/fetch-orders', [EcwidController::class, 'fetchOrders']);
+Route::get('/product-Ids', [EcwidController::class, 'fetchProductIds']);
+Route::get('/product-variation', [EcwidController::class, 'fetchProductVariations']);
 Route::get('/fetch-data', [Cin7Controller::class, 'getResponseFromEcwid']);
 Route::get('/data', [Cin7Controller::class, 'createCustomer']);
 
