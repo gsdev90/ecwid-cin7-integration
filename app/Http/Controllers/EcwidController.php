@@ -156,8 +156,7 @@ class EcwidController extends Controller
     }
 
 
-    // To get Product ID
-    public function fetchProductIds()
+    public function fetchProductsAndVariations()
     {
         $storeId = env('ECWID_STORE_ID');
         $apiToken = env('ECWID_API_TOKEN');
@@ -182,30 +181,31 @@ class EcwidController extends Controller
             $jsonData = json_decode($response->getBody()->getContents(), true);
             Log::info('Product IDs fetched successfully', ['products' => $jsonData]);
 
-            $extractedData = array_map(function($product) {
+            $productsWithVariations = array_map(function($product) use ($storeId, $apiToken) {
+                $productId = $product['id'];
+                $variations = $this->fetchProductVariations($storeId, $apiToken, $productId);
+
                 return [
-                    'productId' => $product['id'],
+                    'productId' => $productId,
                     'name' => $product['name'],
-                    'sku' => $product['sku']
+                    'sku' => $product['sku'],
+                    'variations' => $variations
                 ];
             }, $jsonData['items']);
 
-            Log::info('Product IDs processed successfully', ['extractedData' => $extractedData]);
+            Log::info('Products and variations processed successfully', ['productsWithVariations' => $productsWithVariations]);
 
-            return response()->json($extractedData, 200, [], JSON_PRETTY_PRINT);
+            return response()->json($productsWithVariations, 200, [], JSON_PRETTY_PRINT);
 
         } catch (\Exception $e) {
-            Log::error('Error fetching product IDs: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to fetch product IDs', 'message' => $e->getMessage()], 500);
+            Log::error('Error fetching products and variations: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to fetch products and variations', 'message' => $e->getMessage()], 500);
         }
     }
 
-    public function fetchProductVariations()
+    
+    private function fetchProductVariations($storeId, $apiToken, $productId)
     {
-        $productId = "129101039"; //129101039  138836880
-        $storeId = env('ECWID_STORE_ID');
-        $apiToken = env('ECWID_API_TOKEN');
-
         $url = "https://app.ecwid.com/api/v3/{$storeId}/products/{$productId}/combinations";
 
         try {
@@ -218,12 +218,19 @@ class EcwidController extends Controller
                 ]
             ]);
 
-            $jsonData = json_decode($response->getBody()->getContents(), true);
+            $body = $response->getBody()->getContents();
+            Log::info('Response body for product variations', ['body' => $body]);
+            $jsonData = json_decode($body, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new \Exception('Error decoding JSON response: ' . json_last_error_msg());
+            }
+
             Log::info('Product variations fetched successfully', ['variations' => $jsonData]);
 
-            if (!isset($jsonData['combinations'])) {
+            if (!isset($jsonData['combinations']) || empty($jsonData['combinations'])) {
                 Log::warning('No product variations found for the given product ID', ['productId' => $productId]);
-                return response()->json(['message' => 'No product variations found'], 200);
+                return [];
             }
 
             $extractedData = array_map(function($variation) {
@@ -243,18 +250,15 @@ class EcwidController extends Controller
 
             Log::info('Product variations processed successfully', ['extractedData' => $extractedData]);
 
-            return response()->json($extractedData, 200, [], JSON_PRETTY_PRINT);
+            return $extractedData;
 
         } catch (\Exception $e) {
             Log::error('Error fetching product variations: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to fetch product variations', 'message' => $e->getMessage()], 500);
+            return [];
         }
     }
 
-
-
-
-
+    
     // public function pushToCin7(Request $request)
     // {
     //     $cin7AccountId = env('CIN7_ACCOUNT_ID');
