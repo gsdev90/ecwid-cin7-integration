@@ -4,9 +4,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\EcwidController;
 use App\Http\Controllers\Cin7Controller;
-use App\Http\Controllers\Ecwid_Cin7Controller; // for presentation controller
-use App\Http\Controllers\Ecwid_Cin7UpdateController;
-use App\Http\Controllers\NewController;
+// use App\Http\Controllers\Ecwid_Cin7Controller; // for presentation controller
+// use App\Http\Controllers\Ecwid_Cin7UpdateController;
+use App\Http\Controllers\Ecwid_Cin7_IntegrationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -37,25 +37,18 @@ Route::post('/Create-Sale-Through-Localhost', [Cin7Controller::class, 'createSal
 
 Route::post('/create-customer-for-cin7', [Cin7Controller::class, 'createCustomerForCin7']);
 
-Route::get('/test', function () {
-    return response()->json(['status' => 'ok']);
-});
-
-
 Route::get('/fetch', [EcwidController::class, 'fetchOrders']);
 
-
 // New controller for ecwid_cinController
-Route::get('/Fetch-All-Orders', [Ecwid_Cin7Controller::class, 'fetchOrders']);
+// Route::get('/Fetch-All-Orders', [Ecwid_Cin7Controller::class, 'fetchOrders']);
 
 // Route::get('/garry', [Ecwid_Cin7Controller::class, 'garry']);
 
-
-Route::get('/All-Sale-Order', [Ecwid_Cin7UpdateController::class, 'fetchOrder']);
+// Route::get('/All-Sale-Order', [Ecwid_Cin7UpdateController::class, 'fetchOrder']);
 
 
 // 20-06-2024 garryController
-Route::get('/All-Orders', [NewController::class, 'fetchOrder']);
+Route::get('/All-Orders', [Ecwid_Cin7_IntegrationController::class, 'fetchOrder']);
     
 
 

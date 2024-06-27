@@ -24,11 +24,7 @@ Route::get('/product-Ids', [EcwidController::class, 'fetchProductsWithOptions'])
 Route::get('/product-variation', [EcwidController::class, 'fetchProductVariations']);
 Route::get('/fetch-data', [Cin7Controller::class, 'getResponseFromEcwid']);
 Route::get('/data', [Cin7Controller::class, 'createCustomer']);
-
 Route::get('/firstdata', [Cin7Controller::class, 'createCustomerInternal']);
-
-
-
 Route::get('/fetch', [EcwidController::class, 'fetchOrders']);
 
 
@@ -42,18 +38,7 @@ Route::get('/fetch', [EcwidController::class, 'fetchOrders']);
 // Route::post('/test-post', [EcwidController::class, 'handlePostRequest']);
 
 // routes/web.php
-Route::get('/test', function () {
-    return 'This is garry testing.!';
-});
 
-
-Route::get('/test2', function () {
-    return 'This is garry testing.!';
-});
-
-Route::get('/test4', function () {
-    return 'This is garry testing.!';
-});
 
 
 

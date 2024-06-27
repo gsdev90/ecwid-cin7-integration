@@ -7,7 +7,7 @@ use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Log;
 use App\Helpers\SkuTransformer; // Import the helper class
 
-class NewController extends Controller
+class Ecwid_Cin7_IntegrationController extends Controller
 {
     protected $client;
 
