@@ -25,7 +25,7 @@ class NewController extends Controller
         $queryParams = [
             'count' => 100,
             'paymentStatus' => 'PAID',
-            'fulfillmentStatus' => 'AWAITING_PROCESSING,PROCESSING',
+            'fulfillmentStatus' => 'AWAITING_PROCESSING,PROCESSING,SHIPPED',
         ];
 
         try {
@@ -107,10 +107,12 @@ class NewController extends Controller
             }, $jsonData['items']);
 
             Log::info('Orders processed successfully');
+            // Log::info('Fetch order to processed for CIN7:', ['customerId' => $extractedData[89]]);
+            // return response()->json($extractedData[89], 200, [], JSON_PRETTY_PRINT);
 
             // only for processed 1 order
             if (!empty($extractedData)) {
-                $this->createCustomerForCin7($extractedData[11]);
+                $this->createCustomerForCin7($extractedData[89]);
             }
 
             // for Processed all orders
@@ -255,7 +257,7 @@ class NewController extends Controller
                 "Tax" => 0,
                 "AverageCost" => $item['AverageCost'] ?? 0,
                 "TaxRule" => "GST on Income",
-                "Comment" => "",
+                "Comment" => "Only Testing Purposes",
                 "Total" => $item['quantity'] * $item['price']
             ];
         }, $order['items']);
@@ -266,6 +268,7 @@ class NewController extends Controller
             "Phone" => $customer['Contacts'][0]['Phone'],
             "Email" => $customer['Contacts'][0]['Email'],
             "Contact" => $customer['Contacts'][0]['Name'],
+            "CustomerReference" => "TEST Only",
             "DefaultAccount" => $customer['RevenueAccount'],
             "Status" => "COMPLETED",
             "CombinedPickingStatus" => "PICKING",
@@ -322,14 +325,14 @@ class NewController extends Controller
                     "Total" => $order['total']
                 ]
             ],
-            "ShippingNotes" => "",
+            "ShippingNotes" => $customer['Name']. "\n" .$customer['Addresses'][1]['Line1']. "\n".$customer['Addresses'][1]['Line2']. "\n".$customer['Addresses'][1]['City']. " " .$customer['Addresses'][1]['State'] ." ".$customer['Addresses'][1]['Postcode']. "\n" .$customer['Addresses'][1]['Country']."\n".$customer['Contacts'][0]['Phone']."\n".$customer['Contacts'][0]['Email'],
             "TaxRule" => "",
             "TaxInclusive" => "false",
             "Terms" => $customer['PaymentTerm'],
             "PriceTier" => $customer['PriceTier'],
             "Location" => $customer['Location'],
-            "Note" => "",
-            "CustomerReference" => "",
+            "Note" => $customer['Name']. "\n" .$customer['Addresses'][1]['Line1']. "\n".$customer['Addresses'][1]['Line2']. "\n".$customer['Addresses'][1]['City']. " " .$customer['Addresses'][1]['State'] ." ".$customer['Addresses'][1]['Postcode']. "\n" .$customer['Addresses'][1]['Country']."\n".$customer['Contacts'][0]['Phone']."\n".$customer['Contacts'][0]['Email'],
+            "CustomerReference" => $order['orderNumber'],
             "AutoPickPackShipMode" => "NOPICK",
             "SalesRepresentative" => $customer['SalesRepresentative'],
             "Carrier" => $customer['Carrier'],

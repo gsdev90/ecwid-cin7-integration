@@ -156,107 +156,126 @@ class EcwidController extends Controller
     }
 
 
-    public function fetchProductsAndVariations()
+    public function fetchProductsWithOptions()
     {
         $storeId = env('ECWID_STORE_ID');
         $apiToken = env('ECWID_API_TOKEN');
-
+    
         $url = "https://app.ecwid.com/api/v3/{$storeId}/products";
         $queryParams = [
             'limit' => 500, // Adjust the limit as needed
             'offset' => 0
         ];
-
+    
         try {
             Log::info('Fetching product IDs from Ecwid', ['url' => $url, 'queryParams' => $queryParams]);
-
+    
             $response = $this->client->request('GET', $url, [
                 'headers' => [
                     'Accept' => 'application/json',
                     'Authorization' => "Bearer {$apiToken}",
-                ],
+                    ],
                 'query' => $queryParams
             ]);
-
+    
             $jsonData = json_decode($response->getBody()->getContents(), true);
             Log::info('Product IDs fetched successfully', ['products' => $jsonData]);
-
-            $productsWithVariations = array_map(function($product) use ($storeId, $apiToken) {
-                $productId = $product['id'];
-                $variations = $this->fetchProductVariations($storeId, $apiToken, $productId);
-
+    
+            $productsWithVariations = array_map(function($product) {
+                $options = isset($product['options']) ? $product['options'] : [];
+                $productOptions = array_map(function($option) {
+                    return [
+                        'name' => $option['name'],
+                        'choices' => array_map(function($choice) {
+                            return $choice['text'];
+                        }, $option['choices'])
+                    ];
+                }, $options);
+    
                 return [
-                    'productId' => $productId,
+                    'productId' => $product['id'],
                     'name' => $product['name'],
                     'sku' => $product['sku'],
-                    'variations' => $variations
+                    'options' => $productOptions
                 ];
             }, $jsonData['items']);
-
-            Log::info('Products and variations processed successfully', ['productsWithVariations' => $productsWithVariations]);
-
+    
+            Log::info('Products and options processed successfully', ['productsWithVariations' => $productsWithVariations]);
+    
             return response()->json($productsWithVariations, 200, [], JSON_PRETTY_PRINT);
-
+    
         } catch (\Exception $e) {
             Log::error('Error fetching products and variations: ' . $e->getMessage());
             return response()->json(['error' => 'Failed to fetch products and variations', 'message' => $e->getMessage()], 500);
         }
     }
+    
 
     
-    private function fetchProductVariations($storeId, $apiToken, $productId)
-    {
-        $url = "https://app.ecwid.com/api/v3/{$storeId}/products/{$productId}/combinations";
+    // public function fetchProductVariations()
+    // {
 
-        try {
-            Log::info('Fetching product variations from Ecwid', ['url' => $url]);
+    //     $productId = "259879242";
+    //     $storeId = env('ECWID_STORE_ID');
+    //     $apiToken = env('ECWID_API_TOKEN');
 
-            $response = $this->client->request('GET', $url, [
-                'headers' => [
-                    'Accept' => 'application/json',
-                    'Authorization' => "Bearer {$apiToken}",
-                ]
-            ]);
+    //     $url = "https://app.ecwid.com/api/v3/{$storeId}/products/{$productId}/combinations";
 
-            $body = $response->getBody()->getContents();
-            Log::info('Response body for product variations', ['body' => $body]);
-            $jsonData = json_decode($body, true);
+    //     try {
+    //         Log::info('Fetching product variations from Ecwid', ['url' => $url]);
 
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new \Exception('Error decoding JSON response: ' . json_last_error_msg());
-            }
+    //         $response = $this->client->request('GET', $url, [
+    //             'headers' => [
+    //                 'Accept' => 'application/json',
+    //                 'Authorization' => "Bearer {$apiToken}",
+    //             ]
+    //         ]);
 
-            Log::info('Product variations fetched successfully', ['variations' => $jsonData]);
+    //         $body = $response->getBody()->getContents();
+    //         Log::info('Response body for product variations', ['body' => $body]);
+    //         $jsonData = json_decode($body, true);
+    //         return $jsonData;
 
-            if (!isset($jsonData['combinations']) || empty($jsonData['combinations'])) {
-                Log::warning('No product variations found for the given product ID', ['productId' => $productId]);
-                return [];
-            }
+    //         if (json_last_error() !== JSON_ERROR_NONE) {
+    //             throw new \Exception('Error decoding JSON response: ' . json_last_error_msg());
+    //         }
 
-            $extractedData = array_map(function($variation) {
-                return [
-                    'combinationId' => $variation['id'],
-                    'sku' => $variation['sku'],
-                    'quantity' => $variation['quantity'],
-                    'price' => $variation['price'],
-                    'options' => array_map(function($option) {
-                        return [
-                            'name' => $option['name'],
-                            'value' => $option['value'],
-                        ];
-                    }, $variation['options']),
-                ];
-            }, $jsonData['combinations']);
+    //         Log::info('Product variations fetched successfully', ['variations' => $jsonData]);
 
-            Log::info('Product variations processed successfully', ['extractedData' => $extractedData]);
+    //         // if (!isset($jsonData['combinations']) || empty($jsonData['combinations'])) {
+    //         //     Log::warning('No product variations found for the given product ID', ['productId' => $productId]);
+    //         //     return [];
+    //         // }
 
-            return $extractedData;
+    //         $extractedData = array_map(function($variation) {
+    //             return [
+    //                 'combinationId' => $variation['id'],
+    //                 'sku' => $variation['sku'],
+    //                 'quantity' => $variation['quantity'],
+    //                 'price' => $variation['price'],
+    //                 'options' => array_map(function($option) {
+    //                     return [
+    //                         'name' => $option['name'],
+    //                         'choices' => array_map(function($choice) {
+    //                             return [
+    //                                 'name' => $choice['text'],
+    //                             ];
+    //                         }, $option['choices']) // Fixed variable reference here
+    //                     ];
+    //                 }, $variation['options']),
+    //             ];
+    //         }, $jsonData['combinations']);
+            
 
-        } catch (\Exception $e) {
-            Log::error('Error fetching product variations: ' . $e->getMessage());
-            return [];
-        }
-    }
+    //         Log::info('Product variations processed successfully', ['extractedData' => $extractedData]);
+
+    //         return $extractedData;
+
+    //     } catch (\Exception $e) {
+    //         Log::error('Error fetching product variations: ' . $e->getMessage());
+    //         return [];
+    //     }
+    // }
 
     
     // public function pushToCin7(Request $request)
