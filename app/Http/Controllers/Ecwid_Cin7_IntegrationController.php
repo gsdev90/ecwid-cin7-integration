@@ -107,12 +107,12 @@ class Ecwid_Cin7_IntegrationController extends Controller
             }, $jsonData['items']);
 
             Log::info('Orders processed successfully');
-            // Log::info('Fetch order to processed for CIN7:', ['customerId' => $extractedData[89]]);
-            // return response()->json($extractedData[89], 200, [], JSON_PRETTY_PRINT);
+            // Log::info('Fetch order to processed for CIN7:', ['customerId' => $extractedData[0]]);
+            // return response()->json($extractedData[0], 200, [], JSON_PRETTY_PRINT);
 
             // only for processed 1 order
             if (!empty($extractedData)) {
-                $this->createCustomerForCin7($extractedData[89]);
+                $this->createCustomerForCin7($extractedData[0]);
             }
 
             // for Processed all orders
@@ -160,7 +160,7 @@ class Ecwid_Cin7_IntegrationController extends Controller
             "AttributeSet" => null,
             "Tags" => null,
             "Status" => "Active",
-            "IsOnCreditHold" => true,
+            "IsOnCreditHold" => false,
             "Addresses" => [
                 [
                     "Line1" => $order['shippingPerson']['street'],
@@ -325,13 +325,13 @@ class Ecwid_Cin7_IntegrationController extends Controller
                     "Total" => $order['total']
                 ]
             ],
-            "ShippingNotes" => $customer['Name']. "\n" .$customer['Addresses'][1]['Line1']. "\n".$customer['Addresses'][1]['Line2']. "\n".$customer['Addresses'][1]['City']. " " .$customer['Addresses'][1]['State'] ." ".$customer['Addresses'][1]['Postcode']. "\n" .$customer['Addresses'][1]['Country']."\n".$customer['Contacts'][0]['Phone']."\n".$customer['Contacts'][0]['Email'],
+            "ShippingNotes" => $customer['Name']. "\n" .$customer['Addresses'][1]['Line1']. " ".$customer['Addresses'][1]['Line2']. "\n".$customer['Addresses'][1]['City']. " " .$customer['Addresses'][1]['State'] ." ".$customer['Addresses'][1]['Postcode']. "\n" .$customer['Addresses'][1]['Country']."\n".$customer['Contacts'][0]['Phone']."\n".$customer['Contacts'][0]['Email'],
             "TaxRule" => "",
             "TaxInclusive" => "false",
             "Terms" => $customer['PaymentTerm'],
             "PriceTier" => $customer['PriceTier'],
             "Location" => $customer['Location'],
-            "Note" => $customer['Name']. "\n" .$customer['Addresses'][1]['Line1']. "\n".$customer['Addresses'][1]['Line2']. "\n".$customer['Addresses'][1]['City']. " " .$customer['Addresses'][1]['State'] ." ".$customer['Addresses'][1]['Postcode']. "\n" .$customer['Addresses'][1]['Country']."\n".$customer['Contacts'][0]['Phone']."\n".$customer['Contacts'][0]['Email'],
+            "Note" => $customer['Name']. "\n" .$customer['Addresses'][1]['Line1']. " ".$customer['Addresses'][1]['Line2']. "\n".$customer['Addresses'][1]['City']. " " .$customer['Addresses'][1]['State'] ." ".$customer['Addresses'][1]['Postcode']. "\n" .$customer['Addresses'][1]['Country']."\n".$customer['Contacts'][0]['Phone']."\n".$customer['Contacts'][0]['Email'],
             "CustomerReference" => $order['orderNumber'],
             "AutoPickPackShipMode" => "NOPICK",
             "SalesRepresentative" => $customer['SalesRepresentative'],

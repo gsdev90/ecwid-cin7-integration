@@ -9,6 +9,9 @@ class SkuTransformer
     public static function transform($selectedOptions = [])
     {
         if ($selectedOptions) {
+
+            // $hosetailThreadValue = '';
+            // $ferruleType = '';
         // Check selected options and transform SKU accordingly
             foreach ($selectedOptions as $option) {
                 
@@ -24,13 +27,21 @@ class SkuTransformer
                 $value = trim($value);
                 $value = preg_replace('/\s+/', ' ', $value);
 
+                // Store relevant values for later use
+                // if ($name == 'Hosetail x Thread') {
+                //     $hosetailThreadValue = $value;
+                // }
+                // if ($name == 'Ferrule Type' && $value == 'TWO WIRE') {
+                //     $ferruleType = $value;
+                // }
+
 
                 // To see logs on server 
-                error_log("Option name: " . $name);
-                error_log("Option value: " . $value);
+                // error_log("Option name: " . $name);
+                // error_log("Option value: " . $value);
 
-                // Log::info("name: " . $name);
-                // Log::info("value : " . $value);
+                Log::info("name: " . $name);
+                Log::info("value : " . $value);
 
                 // this array check if there name exist in selected name
                 $all_Selected_Name = [
@@ -64,6 +75,8 @@ class SkuTransformer
                                        '90',
                                        '950SA',
                                        'Female',
+                                       '50 m 100R2AT Coil',
+                                       '100R2AT 20m Coil Hydraulic Hose'
                                     ];
 
                 if (in_array($name, $all_Selected_Name)) {
@@ -726,15 +739,19 @@ class SkuTransformer
                             return 'JIM-UNM-2626';  
                         // for Hose
                         case '1/2 H-R2-08-10-EN':
+                        case '1/2':
                             return 'H-R2-08-EN';
                         case '20 metre coil':
                             return 'H-R2-04-EN';
                         case '1/4 H-R2-04-10-EN':
+                        case '1/4 x 20 m Coil':
                             return 'H-R2-04-EN';
                         case '10 Metre coil H-R2-1210':
                             return 'H-R2-12-EN';
                         case '3/8 H-R2-06-10-EN':
+                        case '3/8 x 20 m Coil':
                             return 'H-R2-06-EN';
+
                         //JIC x UNO 90° Male x Male Adapters
                         case '7/16 JIC M x 9/16 UNO M 90 ELBOW -0406':
                             return 'JIM-UNM-90C-0709';
@@ -902,15 +919,30 @@ class SkuTransformer
                         case '48.3mm':
                           return 'TC-48.3-S'; 
                         case '50.8mm':
-                          return 'TC-50.8-S';    
+                          return 'TC-50.8-S';  
+                        
+                        // Spiral wrap Hose Cable Protection
+                        case '32mm 20mts':
+                            return 'SPG-32-BLK';
+                        case '25mm 20mts':
+                            return 'SPG-25-BLK';
+                        case '40mm 20mts':
+                            return 'SPG-40-BLK';
                     }
                 }
-                //  elseif ($option['name'] == 'SAE 100R2 04  length') {
-                //     return 'H-R2-04-EN';
-                // }  elseif ($option['name'] == 'SAE 100R2AT12 3/4 Bore LENGTH') {
-                //     return 'H-R2-12-EN';
-                // } 
             }
+
+            // Check if 'Ferrule Type' is 'TWO WIRE' and 'Hosetail x Thread' value is set
+            // if ($ferruleType == 'TWO WIRE' && $hosetailThreadValue) {
+            //     // Extract size from the 'Hosetail x Thread' value
+            //     if (preg_match('/(\d+)\/(\d+)/', $hosetailThreadValue, $matches)) {
+            //         $size = $matches[1];  // Assuming the size is the first number
+            //         return 'F-R2-' . $size;
+            //     } elseif ($ferruleType == 'ONE WIRE') {
+            //         return 'FR-R1-' . $size;
+            //     }
+            // }
+
         }
 
         // Default return if no condition is met

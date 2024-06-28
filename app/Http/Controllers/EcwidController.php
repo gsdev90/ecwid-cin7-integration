@@ -537,4 +537,9 @@ class EcwidController extends Controller
             return response()->json(['error' => 'Failed to fetch orders', 'message' => $e->getMessage()], 500);
         }
    }
+
+
+   public static function test(){
+    echo "Hello Garry";
+   }
 }
