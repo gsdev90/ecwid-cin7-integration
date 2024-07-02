@@ -25,7 +25,7 @@ class Ecwid_Cin7_IntegrationController extends Controller
         $queryParams = [
             'count' => 100,
             'paymentStatus' => 'PAID',
-            'fulfillmentStatus' => 'AWAITING_PROCESSING,PROCESSING,SHIPPED',
+            'fulfillmentStatus' => 'AWAITING_PROCESSING',
         ];
 
         try {
@@ -111,16 +111,16 @@ class Ecwid_Cin7_IntegrationController extends Controller
             // return response()->json($extractedData[0], 200, [], JSON_PRETTY_PRINT);
 
             // only for processed 1 order
-            if (!empty($extractedData)) {
-                $this->createCustomerForCin7($extractedData[0]);
-            }
+            // if (!empty($extractedData)) {
+            //     $this->createCustomerForCin7($extractedData[0]);
+            // }
 
             // for Processed all orders
-            // if (!empty($extractedData)) {
-            //     foreach ($extractedData as $orderData) {
-            //         $this->createCustomerForCin7($orderData);
-            //     }
-            // }
+            if (!empty($extractedData)) {
+                foreach ($extractedData as $orderData) {
+                    $this->createCustomerForCin7($orderData);
+                }
+            }
 
             if ($type == 'first') {
                 return response()->json($extractedData[0], 200);

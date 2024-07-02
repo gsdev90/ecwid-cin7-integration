@@ -34,7 +34,7 @@ class EcwidController extends Controller
         $queryParams = [
             'count' => 100,
             'paymentStatus' => 'PAID',
-            'fulfillmentStatus' => 'AWAITING_PROCESSING,PROCESSING,SHIPPED'
+            'fulfillmentStatus' => 'AWAITING_PROCESSING'
         ];
 
         try {
@@ -210,7 +210,6 @@ class EcwidController extends Controller
         }
     }
     
-
     
     // public function fetchProductVariations()
     // {
@@ -538,8 +537,5 @@ class EcwidController extends Controller
         }
    }
 
-
-   public static function test(){
-    echo "Hello Garry";
-   }
+   
 }
